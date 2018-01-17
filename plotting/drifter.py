@@ -53,7 +53,6 @@ class DrifterPlotter(plotter.Plotter):
         with Dataset(ds_url % self.drifter, 'r') as ds:
             self.name = ds.buoyid
 
-            self.imei = str(chartostring(ds['imei'][0]))
             self.wmo = str(chartostring(ds['wmo'][0]))
 
             t = netcdftime.utime(ds['data_date'].units)
@@ -294,8 +293,7 @@ class DrifterPlotter(plotter.Plotter):
                 plt.ylabel(label)
                 plt.setp(plt.gca().get_xticklabels(), rotation=30)
 
-        fig.suptitle(gettext("Drifter Plot (IMEI: %s, WMO: %s)") %
-                     (self.imei, self.wmo))
+        fig.suptitle(gettext("Drifter Plot (WMO: %s)") % (self.wmo))
         fig.tight_layout(pad=3, w_pad=4)
         return super(DrifterPlotter, self).plot(fig)
 
