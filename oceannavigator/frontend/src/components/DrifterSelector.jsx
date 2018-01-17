@@ -9,10 +9,8 @@ export default class DrifterSelector extends React.Component {
     super(props);
 
     this.state = {
-      imei: [],
       wmo: [],
       deployment: [],
-      imei_map: {},
       wmo_map: {},
       deployment_map: {},
     };
@@ -26,12 +24,6 @@ export default class DrifterSelector extends React.Component {
       url: "/api/drifters/meta.json",
       dataType: "json",
       success: function(data) {
-        const imei = Object.keys(data.imei).filter(function (k) {
-          const list = data.imei[k];
-          return list.every(function (e) {
-            return $.inArray(e, this.props.state) != -1;
-          }.bind(this));
-        }.bind(this));
         const wmo = Object.keys(data.wmo).filter(function (k) {
           const list = data.wmo[k];
           return list.every(function (e) {
@@ -41,14 +33,12 @@ export default class DrifterSelector extends React.Component {
         const deployment = Object.keys(data.deployment).filter(function (k) {
           const list = data.deployment[k];
           return list.every(function (e) {
-            return $.inArray(e, this.props.state) != -1;
+            return $.inArray(e, this.props.state.wmo) != -1;
           }.bind(this));
         }.bind(this));
         this.setState({
-          imei_map: data["imei"],
           wmo_map: data["wmo"],
           deployment_map: data["deployment"],
-          imei: imei,
           wmo: wmo,
           deployment: deployment,
         });
@@ -62,7 +52,6 @@ export default class DrifterSelector extends React.Component {
 
   onUpdate(keys, values) {
     const newState = {
-      imei: this.state.imei,
       wmo: this.state.wmo,
       deployment: this.state.deployment,
     };
@@ -71,9 +60,6 @@ export default class DrifterSelector extends React.Component {
     }
 
     this.props.select(Array.from(new Set([].concat.apply([], [].concat(
-            newState.imei.map(function (o) {
-              return this.state.imei_map[o];
-            }.bind(this)),
             newState.wmo.map(function (o) {
               return this.state.wmo_map[o];
             }.bind(this)),
@@ -85,16 +71,6 @@ export default class DrifterSelector extends React.Component {
   }
 
   render() {
-    const imei = Array.from(
-      new Set(
-        Object.keys(this.state.imei_map)
-      )
-    ).sort().map(function(o) {
-      return {
-        id: o,
-        value: o
-      };
-    });
     const wmo = Array.from(
       new Set(
         Object.keys(this.state.wmo_map)
@@ -115,21 +91,11 @@ export default class DrifterSelector extends React.Component {
         value: o
       };
     });
-    _("IMEI");
     _("WMO");
     _("Deployment");
     return (
       <div className='DrifterSelector'>
         <div className='inputs'>
-          <ComboBox
-            key='imei'
-            id='imei'
-            state={this.state.imei}
-            multiple
-            title={_("IMEI")}
-            data={imei}
-            onUpdate={this.onUpdate}
-          />
           <ComboBox
             key='wmo'
             id='wmo'
