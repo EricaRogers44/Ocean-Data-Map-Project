@@ -65,6 +65,54 @@ class Nemo(NetCDFData):
 
         return VariableList(l)
 
+    def get_divergence(self, zonal_velocity, meridional_velocity, time_index):
+        """Calculate horizontal divergence.
+
+        Method adapted from NEMO div_cur function. It computes the horizontal
+        divergence over the entire domain for a given time.
+        """
+
+        # Extract velocity values at given time index.
+        u = self._dataset.variables[zonal_velocity][time_index, :, :, :]
+        v = self._dataset.variables[meridional_velocity][time_index, :, :, :]
+
+        # Initialize divergence array.
+        nk, nj, ni = u.shape
+        hdiv = np.zeros((nk, nj, ni))
+
+        # FIXME: Correctly set coordinate scale factors.
+        # Normally these values are stored in and retrieved from a mesh file,
+        # but that file is never used in the Navigator. Without access to it,
+        # these scale factors need to be calculated. The scale factors for T
+        # can be computed as follows:
+        #
+        # lamt = nav_lon
+        # phit = nav_lat
+        # djlamt, dilamt = np.gradient(lamt, edge_order=2)
+        # djphit, diphit = np.gradient(phit, edge_order=2)
+        # e1t = earthrad * deg2rad * np.abs(dilamt * np.cos(deg2rad * phit))
+        # e2t = earthrad * deg2rad * np.abs(djphit)
+        # e3t = np.gradient(zt, edge_order=2)
+        #
+        # But scale factors for U and V are shifted. How to calculate?
+        e2u = np.ones((nj, ni))
+        e3u = np.ones((nk, nj, ni))
+        e1v = np.ones((nj, ni))
+        e3v = np.ones((nk, nj, ni))
+        e1t = np.ones((nj, ni))
+        e2t = np.ones((nj, ni))
+        e3t = np.ones((nk, nj, ni))
+        for k in range(2, nk - 1):
+            for j in range(2, nj - 1):
+                for i in range(2, ni - 1):
+                    hdiv[k, j, i] = \
+                        (e2u[j, i] * e3u[k, j, i] * u[k, j, i] \
+                         - e2u[j, i - 1] * e3u[k, j, i - 1] * u[k, j, i - 1] \
+                         + e1v[j, i] * e3v[k, j, i] * v[k, j, i] \
+                         - e1v[j - 1, i] * e3v[k, j - 1, i] * v[k, j - 1, i]) \
+                        / (e1t[j, i] * e2t[j, i] * e3t[k, j, i])
+        return hdiv
+
     def __find_index(self, lat, lon, latvar, lonvar, n=1):
         if self._kdt.get(latvar.name) is None:
             latvals = latvar[:] * RAD_FACTOR
